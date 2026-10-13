@@ -1,76 +1,177 @@
 <!DOCTYPE html>
-<html lang="en-GB">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Task Flow - Internship Assessment</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day Board — a small Kanban</title>
+<meta name="description" content="A client-side task board with three columns, priority colour coding, search and filtering. Everything is kept in browser storage.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app-container">
-    <header class="app-header">
-      <h1>Task Flow Board</h1>
-      <p>Organise and track your project tasks efficiently.</p>
-    </header>
 
-    <!-- Controls & Creation Section -->
-    <section class="controls-section">
-      <form id="task-form" class="task-form">
-        <input type="text" id="task-title" placeholder="Task title..." required />
-        <select id="task-category" required>
-          <option value="" disabled selected>Select Category</option>
-          <option value="Development">Development</option>
-          <option value="Design">Design</option>
-          <option value="Marketing">Marketing</option>
-        </select>
-        <select id="task-priority" required>
-          <option value="" disabled selected>Select Priority</option>
-          <option value="Low">Low Priority</option>
-          <option value="Medium">Medium Priority</option>
-          <option value="High">High Priority</option>
-        </select>
-        <button type="submit" class="btn btn-primary">Add Task</button>
-      </form>
+<a class="skip" href="#board">Skip to the board</a>
 
-      <div class="filter-bar">
-        <input type="text" id="search-input" placeholder="Search tasks..." />
-        <select id="category-filter">
-          <option value="All">All Categories</option>
-          <option value="Development">Development</option>
-          <option value="Design">Design</option>
-          <option value="Marketing">Marketing</option>
-        </select>
-      </div>
-    </section>
+<header class="masthead">
+  <div class="shell masthead__inner">
+    <div>
+      <h1 class="masthead__title">Day Board</h1>
+      <p class="masthead__count" id="counter" role="status" aria-live="polite">No tasks yet</p>
+    </div>
 
-    <!-- Kanban Columns -->
-    <main class="board-container">
-      <div class="column" data-status="todo">
-        <div class="column-header">
-          <h2>To Do</h2>
-          <span class="task-count" id="count-todo">0</span>
-        </div>
-        <div class="task-list" id="list-todo"></div>
-      </div>
-
-      <div class="column" data-status="in-progress">
-        <div class="column-header">
-          <h2>In Progress</h2>
-          <span class="task-count" id="count-in-progress">0</span>
-        </div>
-        <div class="task-list" id="list-in-progress"></div>
-      </div>
-
-      <div class="column" data-status="completed">
-        <div class="column-header">
-          <h2>Completed</h2>
-          <span class="task-count" id="count-completed">0</span>
-        </div>
-        <div class="task-list" id="list-completed"></div>
-      </div>
-    </main>
+    <button class="theme" id="themeToggle" type="button" aria-pressed="false">
+      <span class="theme__dot" aria-hidden="true"></span>
+      <span class="theme__label" id="themeLabel">Dark</span>
+    </button>
   </div>
+</header>
 
-  <script src="script.js"></script>
+
+<!-- ---------- new task ---------- -->
+
+<section class="compose" aria-labelledby="composeTitle">
+  <div class="shell">
+    <h2 class="compose__title" id="composeTitle">Add a task</h2>
+
+    <form class="form" id="taskForm" novalidate>
+      <div class="form__row">
+        <div class="field field--grow">
+          <label for="taskTitle">Title</label>
+          <input type="text" id="taskTitle" name="title" maxlength="80" placeholder="Rewrite the onboarding email" autocomplete="off" required>
+          <p class="field__error" id="titleError" hidden>Give the task a title first.</p>
+        </div>
+
+        <div class="field">
+          <label for="taskCategory">Category</label>
+          <select id="taskCategory" name="category">
+            <option value="Development">Development</option>
+            <option value="Design">Design</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Research">Research</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="taskPriority">Priority</label>
+          <select id="taskPriority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form__row form__row--end">
+        <div class="field field--grow">
+          <label for="taskNotes">Description <span class="field__hint">optional</span></label>
+          <textarea id="taskNotes" name="notes" rows="2" maxlength="280" placeholder="What does done look like?"></textarea>
+        </div>
+
+        <button class="btn btn--primary" type="submit">Add task</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+
+<!-- ---------- search and filter ---------- -->
+
+<section class="controls" aria-label="Search and filter">
+  <div class="shell controls__inner">
+    <div class="field field--grow">
+      <label for="search">Search by title</label>
+      <input type="search" id="search" placeholder="Type to narrow the board" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="filterCategory">Show category</label>
+      <select id="filterCategory">
+        <option value="all">All categories</option>
+        <option value="Development">Development</option>
+        <option value="Design">Design</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Research">Research</option>
+      </select>
+    </div>
+
+    <button class="btn btn--quiet" id="clearFilters" type="button">Clear</button>
+  </div>
+</section>
+
+
+<!-- ---------- the board ---------- -->
+
+<main class="board shell" id="board">
+
+  <section class="column" data-column="todo" aria-labelledby="todoHeading">
+    <div class="column__head">
+      <h2 class="column__name" id="todoHeading">To do</h2>
+      <span class="column__tally" data-tally="todo">0</span>
+    </div>
+    <ul class="column__list" data-dropzone="todo"></ul>
+    <p class="column__empty" data-empty="todo">Nothing here. Add a task above.</p>
+  </section>
+
+  <section class="column" data-column="progress" aria-labelledby="progressHeading">
+    <div class="column__head">
+      <h2 class="column__name" id="progressHeading">In progress</h2>
+      <span class="column__tally" data-tally="progress">0</span>
+    </div>
+    <ul class="column__list" data-dropzone="progress"></ul>
+    <p class="column__empty" data-empty="progress">Nothing started yet.</p>
+  </section>
+
+  <section class="column" data-column="done" aria-labelledby="doneHeading">
+    <div class="column__head">
+      <h2 class="column__name" id="doneHeading">Completed</h2>
+      <span class="column__tally" data-tally="done">0</span>
+    </div>
+    <ul class="column__list" data-dropzone="done"></ul>
+    <p class="column__empty" data-empty="done">Finished work lands here.</p>
+  </section>
+
+</main>
+
+
+<footer class="footer">
+  <div class="shell">
+    <p>Tasks are stored in this browser only — nothing is sent anywhere.</p>
+  </div>
+</footer>
+
+
+<!-- Template for one card. Cloned by the renderer rather than
+     building the markup out of strings, which keeps the structure
+     in the HTML where it belongs. -->
+<template id="cardTemplate">
+  <li class="card" draggable="true">
+    <div class="card__top">
+      <span class="card__priority" data-role="priority"></span>
+      <span class="card__category" data-role="category"></span>
+    </div>
+    <h3 class="card__title" data-role="title"></h3>
+    <p class="card__notes" data-role="notes"></p>
+    <div class="card__actions">
+      <button class="iconbtn" type="button" data-action="back" title="Move left">
+        <span aria-hidden="true">&larr;</span>
+        <span class="sr-only">Move left</span>
+      </button>
+      <button class="iconbtn" type="button" data-action="forward" title="Move right">
+        <span aria-hidden="true">&rarr;</span>
+        <span class="sr-only">Move right</span>
+      </button>
+      <button class="iconbtn iconbtn--danger" type="button" data-action="delete" title="Delete task">
+        <span aria-hidden="true">&times;</span>
+        <span class="sr-only">Delete task</span>
+      </button>
+    </div>
+  </li>
+</template>
+
+<script src="js/app.js"></script>
 </body>
 </html>
